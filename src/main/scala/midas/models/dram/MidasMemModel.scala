@@ -14,6 +14,7 @@ import chisel3.experimental.dontTouch
 import midas.core._
 import midas.widgets._
 import midas.passes.{Fame1ChiselAnnotation}
+import midas.targetutils.FpgaDebug
 
 import scala.math.min
 import Console.{UNDERLINED, RESET}
@@ -412,6 +413,18 @@ class MidasMemModel(cfg: BaseConfig)(implicit p: Parameters) extends MemModel {
   attachIO(funcModelRegs)
   attach(rrespError, "rrespError", ReadOnly)
   attach(brespError, "brespError", ReadOnly)
+
+  FpgaDebug(
+    io.tNasti.toHost.hValid,
+    io.tNasti.fromHost.hReady,
+    ingressReady,
+    bReady,
+    rReady,
+    tResetReady,
+    targetFire,
+    io.tNasti.hBits,
+    io.host_mem
+  )
 
   genCRFile()
   dontTouch(targetFire)
