@@ -331,6 +331,20 @@ class SimWrapper(targetIo: Seq[(String, Data)], generatedTargetIo: Seq[(String, 
         clockRatio = if (flipped) endpointClockRatio.inverse else endpointClockRatio  
       ))
 
+      if (endpointClockRatio != UnityClockRatio) {
+        val v = Module(new Queue(rvInterface.bits.cloneType, 8))
+        v.suggestName(s"RVCh_${name}_checkq")
+        v.io.enq.bits <> channel.io.enq.target.bits
+        v.io.enq.valid := channel.io.enq.host.fire && channel.io.enq.target.fire
+        v.io.deq.ready := channel.io.deq.host.fire && channel.io.deq.target.fire
+        val outputLegal = !(channel.io.deq.host.fire && channel.io.deq.target.fire) ||
+                          (v.io.deq.valid && (v.io.deq.bits.asUInt === channel.io.deq.target.bits.asUInt))
+
+        outputLegal.suggestName(s"RVCh_${name}_outputLegal")
+        assert(outputLegal, "Unexpected target payload in target-valid token.")
+        midas.targetutils.FpgaDebug(outputLegal)
+      }
+
       channel suggestName s"ReadyValidChannel_$name"
 
       if (flipped) {
